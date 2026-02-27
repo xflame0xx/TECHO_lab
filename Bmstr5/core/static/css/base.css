@@ -1,0 +1,53 @@
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    color: #111;
+}
+
+.topbar {
+    height: 70px;
+    background: #5a4bb2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 38px;
+    box-sizing: border-box;
+}
+
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    font-size: 22px;
+    color: #f4c7b8;
+}
+
+.brand-name {
+    font-size: 30px;
+    font-weight: 800;
+    color: #f4c7b8;
+    letter-spacing: 1px;
+}
+
+
+.topnav a {
+    color: #f4c7b8;
+    text-decoration: none;
+    font-size: 14px;
+    margin-left: 18px;
+}
+
+.topnav a:hover {
+    text-decoration: underline;
+}
+
+
+.page {
+    padding: 26px 38px;
+}

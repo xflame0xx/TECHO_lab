@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вакансия{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/service.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumbs">Главная / {{ vacancy.title }}</div>
+
+<div class="service-box">
+    <div class="service-image">
+        <img src="{% static 'images/' %}{{ vacancy.image }}" alt="">
+    </div>
+
+    <div class="service-info">
+        <h2>{{ vacancy.title }}</h2>
+
+        <p><b>Работодатель:</b> {{ vacancy.employer }}</p>
+        <p><b>Город:</b> {{ vacancy.city }}</p>
+        <p><b>График:</b> {{ vacancy.schedule }}</p>
+        <p><b>Зарплата:</b> {{ vacancy.salary }} ₽</p>
+        <p><b>Дата публикации:</b> {{ vacancy.published }}</p>
+
+        <div class="buy-row">
+            <button class="buy-btn" disabled>Откликнуться</button>
+            <span class="price">ID: {{ vacancy.id }}</span>
+        </div>
+
+        <div class="description">
+            {{ vacancy.description|linebreaks }}
+        </div>
+
+        <video class="video" autoplay muted loop playsinline>
+            <source src="{% static 'videos/' %}{{ vacancy.video }}" type="video/mp4">
+        </video>
+    </div>
+</div>
+
+{% endblock %}

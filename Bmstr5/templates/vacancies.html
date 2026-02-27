@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Каталог{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/services.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<h1 class="page-title">Каталог вакансий</h1>
+
+<form method="get" class="search">
+    <input type="text" name="search" value="{{ search }}" placeholder="Поиск">
+    <button type="submit">Найти</button>
+</form>
+
+<div class="grid">
+{% for v in vacancies %}
+    <div class="card">
+        <a class="card-link" href="{% url 'vacancy' v.id %}">
+            <div class="img-box">
+                <img src="{% static 'images/' %}{{ v.image }}" alt="">
+            </div>
+            <div class="card-title">{{ v.title }}</div>
+        </a>
+
+        <div class="card-bottom">
+            <div class="price">Зарплата: {{ v.salary }} рублей</div>
+            <a class="btn" href="{% url 'vacancy' v.id %}">Подробнее</a>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заявка{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/order.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<h1 class="order-title">Заявка №{{ application.id }}</h1>
+
+<div class="order-info">
+    <div><span class="label">Соискатель:</span> {{ application.candidate_name }}</div>
+    <div><span class="label">Статус:</span> {{ application.disability }}</div>
+    <div><span class="label">Контакты:</span> {{ application.contact }}</div>
+    <div><span class="label">Результат:</span> {{ application.result }}</div>
+    <div><span class="label">Всего позиций:</span> {{ total_qty }}</div>
+</div>
+
+<h2 class="order-subtitle">Выбранные вакансии</h2>
+
+<div class="order-items">
+    {% for row in items %}
+    <div class="order-item-card">
+
+        <div class="item-img">
+            <img src="{% static 'images/' %}{{ row.vacancy.image }}" alt="">
+        </div>
+
+        <div class="item-fields">
+            <div class="field"><b>ID:</b> {{ row.vacancy.id }}</div>
+            <div class="field"><b>Вакансия:</b> {{ row.vacancy.title }}</div>
+            <div class="field"><b>Город:</b> {{ row.vacancy.city }}</div>
+            <div class="field"><b>ЗП:</b> {{ row.vacancy.salary }} ₽</div>
+        </div>
+
+        <div class="item-mm">
+            <div class="mm-label">м-м</div>
+            <div class="mm-box">{{ row.mm }}</div>
+            <div class="qty">qty: {{ row.qty }}</div>
+        </div>
+
+    </div>
+    {% empty %}
+    <div class="empty">Пока нет выбранных вакансий.</div>
+    {% endfor %}
+</div>
+
+{% endblock %}

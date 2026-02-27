@@ -1,0 +1,44 @@
+.breadcrumbs {
+    margin-bottom: 20px;
+    color: #444;
+}
+
+.service-box {
+    display: flex;
+    gap: 60px;
+}
+
+.service-image img {
+    width: 420px;
+    object-fit: contain;
+}
+
+.service-info {
+    max-width: 650px;
+}
+
+.description {
+    margin-top: 15px;
+    line-height: 1.6;
+    color: #666;
+}
+
+.buy-row {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.buy-btn {
+    background: black;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.buy-btn:hover {
+    opacity: 0.85;
+}

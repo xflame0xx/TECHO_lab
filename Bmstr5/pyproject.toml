@@ -1,0 +1,37 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+exclude = [
+  ".venv",
+  "venv",
+  "__pycache__",
+  "db.sqlite3",
+  "migrations",
+  ".ruff_cache",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",   # PEP8 errors
+  "W",   # PEP8 warnings
+  "F",   # Pyflakes
+  "I",   # Import sorting
+  "D",   # Docstrings (PEP257)
+]
+
+ignore = [
+  "E501", # длинные строки (часто в описаниях)
+  "D100", # docstring для модуля
+  "D104", # docstring для пакета
+  "D106",
+  "D107",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

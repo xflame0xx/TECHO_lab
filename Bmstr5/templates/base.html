@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block page_css %}{% endblock %}
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <span class="brand-icon">✽</span>
+        <span class="brand-name">AbilityWork</span>
+    </div>
+
+    <nav class="topnav">
+        <a href="{% url 'vacancies' %}">Вакансии</a>
+        <a href="{% url 'application' 101 %}">Заявки</a>
+    </nav>
+</header>
+
+<main class="page">
+    {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>
