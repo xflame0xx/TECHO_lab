@@ -288,3 +288,10 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
+
+venv/
+.venv/
+pycache/
+*.pyc
+.idea/
+.vscode/

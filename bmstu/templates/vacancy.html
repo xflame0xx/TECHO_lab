@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вакансия{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/vacancy.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'vacancies' %}">Главная</a> / {{ vacancy.title }}
+</div>
+
+<div class="service-box">
+  <div class="service-image">
+    {% if vacancy.image %}
+      <img src="{{ vacancy.image.url }}" alt="">
+    {% else %}
+      <img src="{% static 'images/fallback.png' %}" alt="">
+    {% endif %}
+  </div>
+
+  <div class="service-info">
+    <h1>{{ vacancy.title }}</h1>
+
+    <div class="info-list">
+      <p><b>Компания:</b> {{ vacancy.company }}</p>
+      <p><b>Город:</b> {{ vacancy.city }}</p>
+      <p><b>График:</b> {{ vacancy.schedule|default:"—" }}</p>
+      <p><b>Поддержка:</b> {{ vacancy.disability_support|default:"—" }}</p>
+    </div>
+
+    {% if vacancy.description %}
+      <div class="description">{{ vacancy.description|linebreaks }}</div>
+    {% endif %}
+
+    <div class="buy-row">
+      <form method="post" action="{% url 'add_to_application' vacancy.id %}">
+        {% csrf_token %}
+        <button class="buy-btn" type="submit">В заявку</button>
+      </form>
+
+      <div class="salary-tag">З/п: {{ vacancy.salary }} ₽</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

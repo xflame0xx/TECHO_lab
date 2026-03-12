@@ -1,0 +1,34 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}JobAbility{% endblock %}</title>
+  
+  
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  
+  
+  {% block css %}{% endblock %}
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">*</div>
+      <div class="brand-name">JobAbility</div>
+    </div>
+
+    <nav class="topnav">
+      <a href="{% url 'vacancies' %}">Вакансии</a>
+      <a href="{% url 'applications' %}">Заявки</a>
+      <a href="/admin/">админ</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

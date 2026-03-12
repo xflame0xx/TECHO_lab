@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Заявка №{{ app.id }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/application.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="order-page">
+  <div class="order-head">
+    <div>
+      <h1 class="order-title">Заявка №{{ app.id }}</h1>
+      <div class="order-meta">
+        <div><span class="label">Создана:</span> {{ app.created_at|date:"d.m.Y H:i" }}</div>
+        <div><span class="label">Позиции:</span> {{ total_positions }}</div>
+        <div><span class="label">Сумма:</span> {{ total_sum }} ₽</div>
+      </div>
+    </div>
+
+    <div class="order-actions">
+      <a class="btn btn-ghost" href="{% url 'applications' %}">← К списку заявок</a>
+    </div>
+  </div>
+
+  <form method="post" class="order-layout">
+    {% csrf_token %}
+
+    
+    <section class="card">
+      <h2 class="order-subtitle">Параметры заявки</h2>
+
+      <div class="form-grid form-grid-2">
+        <div class="field">
+          <label class="label" for="status">Тип/статус заявки</label>
+          <select id="status" name="status" class="control">
+            {% for code, title in status_choices %}
+              <option value="{{ code }}" {% if app.status == code %}selected{% endif %}>{{ title }}</option>
+            {% endfor %}
+          </select>
+          <div class="hint">Можно менять вручную. Даты «сформирована/завершена» поставятся автоматически.</div>
+        </div>
+
+        <div class="field">
+          <label class="label">Дата формирования</label>
+          <div class="readonly">{% if app.formed_at %}{{ app.formed_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</div>
+        </div>
+
+        <div class="field">
+          <label class="label">Дата завершения</label>
+          <div class="readonly">{% if app.completed_at %}{{ app.completed_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</div>
+        </div>
+      </div>
+
+      <h2 class="order-subtitle">Данные соискателя</h2>
+
+      <div class="form-grid form-grid-3">
+        <div class="field">
+          <label class="label" for="full_name">ФИО</label>
+          <input id="full_name" class="control" name="full_name" value="{{ profile.full_name }}" placeholder="Иванов Иван Иванович">
+        </div>
+
+        <div class="field">
+          <label class="label" for="phone">Телефон</label>
+          <input id="phone" class="control" name="phone" value="{{ profile.phone }}" placeholder="+7 (900) 000-00-00">
+        </div>
+
+        <div class="field">
+          <label class="label" for="city">Город</label>
+          <input id="city" class="control" name="city" value="{{ profile.city }}" placeholder="Москва">
+        </div>
+
+        <div class="field">
+          <label class="label" for="age">Возраст</label>
+          <input id="age" class="control" name="age" value="{% if profile.age %}{{ profile.age }}{% endif %}" placeholder="Напр. 22">
+        </div>
+
+        <div class="field">
+          <label class="label" for="gender">Пол</label>
+          <select id="gender" name="gender" class="control">
+            {% for code, title in gender_choices %}
+              <option value="{{ code }}" {% if profile.gender == code %}selected{% endif %}>{{ title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="disability_category">Категория инвалидности</label>
+          <select id="disability_category" name="disability_category" class="control">
+            {% for code, title in category_choices %}
+              <option value="{{ code }}" {% if profile.disability_category == code %}selected{% endif %}>{{ title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button type="submit" class="btn">Сохранить изменения</button>
+      </div>
+    </section>
+    
+    <section class="card">
+      <div class="card-head">
+        <h2 class="order-subtitle">Состав заявки</h2>
+        <div class="muted">Комментарии сохраняются вместе с формой</div>
+      </div>
+
+      <div class="order-items">
+        {% if lines %}
+          {% for line in lines %}
+            <div class="order-item-card">
+              <div class="item-img">
+
+          
+                {% if line.vacancy.image %}
+                  <img src="{{ line.vacancy.image.url }}" alt="{{ line.vacancy.title }}">
+                {% else %}
+                  <img src="{% static 'images/fallback.png' %}" alt="Нет изображения">
+                {% endif %}
+
+              </div>
+
+              <div class="item-main">
+                <div class="item-title">{{ line.vacancy.title }}</div>
+                <div class="item-sub">
+                  <span>{{ line.vacancy.company }}</span>
+                  <span class="dot">•</span>
+                  <span>{{ line.vacancy.city }}</span>
+                </div>
+                <div class="item-price">З/п: <b>{{ line.vacancy.salary }} ₽</b></div>
+              </div>
+
+              <div class="item-comment">
+                <label class="mm-label" for="comment_{{ line.id }}">Комментарий</label>
+                <textarea
+                  id="comment_{{ line.id }}"
+                  name="comment_{{ line.id }}"
+                  class="control textarea"
+                  rows="4"
+                  placeholder="Например: удобный график, удалёнка, есть ли ДМС…"
+                >{{ line.comment }}</textarea>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">В заявке пока нет вакансий. Перейдите в «Вакансии» и нажмите «В заявку».</div>
+        {% endif %}
+      </div>
+
+      <div class="row row-between">
+        <div class="muted">Итого: <b>{{ total_positions }}</b> позиций, <b>{{ total_sum }} ₽</b></div>
+        <button type="submit" class="btn">Сохранить изменения</button>
+      </div>
+    </section>
+  </form>
+
+  <form method="post" action="{% url 'delete_application' app.id %}" class="danger-zone">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить заявку?');">Удалить заявку</button>
+  </form>
+</div>
+{% endblock %}

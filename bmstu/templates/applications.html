@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Заявки{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/applications.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Заявки</h1>
+
+<form method="get" class="filters" autocomplete="off">
+  <div class="f-group">
+    <label>Статус</label>
+    <select name="status">
+      <option value="">Любой статус</option>
+      {% for key, label in statuses %}
+        <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="f-group">
+    <label>Дата начала</label>
+    <input type="date" name="date_from" value="{{ date_from }}">
+  </div>
+
+  <div class="f-group">
+    <label>Дата окончания</label>
+    <input type="date" name="date_to" value="{{ date_to }}">
+  </div>
+
+  <div class="f-actions">
+    <button class="btn" type="submit">Фильтр</button>
+  </div>
+</form>
+
+<div class="table-card">
+  <table class="t">
+    <thead>
+      <tr>
+        <th style="width:90px">#</th>
+        <th style="width:180px">Статус</th>
+        <th style="width:220px">Создана</th>
+        <th style="width:220px">Сформирована</th>
+        <th style="width:220px">Завершена</th>
+        <th style="width:150px">Позиции</th>
+        <th style="width:180px">Сумма</th>
+        <th style="width:140px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in applications %}
+        <tr>
+          <td><a class="link" href="{% url 'application' a.id %}">{{ a.id }}</a></td>
+          <td>
+            <span class="status status--{{ a.status|lower }}">{{ a.get_status_display }}</span>
+          </td>
+          <td>{{ a.created_at|date:"d.m.Y H:i" }}</td>
+          <td>{% if a.formed_at %}{{ a.formed_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+          <td>{% if a.completed_at %}{{ a.completed_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+          <td>
+            <span class="pill">{{ a.lines_count|default:0 }}</span>
+          </td>
+          <td><b>{{ a.total_sum|default:0 }}</b> ₽</td>
+          <td class="actions">
+            <a class="btn btn-ghost" href="{% url 'application' a.id %}">Открыть</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="8" class="empty">Заявок нет</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вакансии{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/vacancies.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Вакансии для соискателей</h1>
+
+<form class="search" method="get">
+  <input type="text" name="search" value="{{ search }}" placeholder="Поиск: название / компания / город" autocomplete="off">
+  <button type="submit">Найти</button>
+</form>
+
+{% if draft %}
+  <div class="draft-card">
+    <div class="draft-title">Текущая заявка</div>
+    <div class="draft-row">ID: <b>{{ draft.id }}</b></div>
+    <div class="draft-row">Кол-во позиций: <b>{{ draft_count }}</b></div>
+    <a class="draft-link" href="{% url 'application' draft.id %}">Открыть</a>
+  </div>
+{% else %}
+  <div class="draft-empty">Текущей заявки нет</div>
+{% endif %}
+
+{% if vacancies %}
+  <div class="grid">
+    {% for v in vacancies %}
+      <div class="card">
+        <a class="card-link" href="{% url 'vacancy' v.id %}">
+          <div class="img-box">
+            {% if v.image %}
+              <img src="{{ v.image.url }}" alt="">
+            {% else %}
+              <img src="{% static 'images/fallback.png' %}" alt="">
+            {% endif %}
+          </div>
+          <div class="card-title">{{ v.title }}</div>
+        </a>
+
+        <div class="meta">{{ v.company }} • {{ v.city }}</div>
+
+        <div class="card-bottom">
+          <div class="price">{{ v.salary }} ₽</div>
+          <a class="btn" href="{% url 'vacancy' v.id %}">Подробнее</a>
+        </div>
+
+        <form method="post" action="{% url 'add_to_application' v.id %}">
+          {% csrf_token %}
+          <button class="btn secondary" type="submit">В заявку</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">Ничего не найдено.</div>
+{% endif %}
+{% endblock %}

@@ -22,10 +22,14 @@ from core import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # список вакансий + поиск
-    path("", views.VacanciesList, name="vacancies"),
-    # страница вакансии
-    path("vacancy/<int:id>/", views.VacancyDetail, name="vacancy"),
-    # страница заявки
-    path("application/<int:id>/", views.ApplicationDetail, name="application"),
+
+    path("", views.home_redirect, name="home"),
+    path("vacancies/", views.VacanciesList, name="vacancies"),
+    path("vacancies/<int:id>/", views.VacancyDetail, name="vacancy"),
+
+    path("applications/", views.ApplicationsList, name="applications"),
+    path("applications/<int:id>/", views.ApplicationDetail, name="application"),
+
+    path("applications/add/<int:id>/", views.add_to_application, name="add_to_application"),
+    path("applications/delete/<int:id>/", views.delete_application, name="delete_application"),
 ]

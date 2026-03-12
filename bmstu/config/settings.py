@@ -31,12 +31,14 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "core",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -74,8 +76,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "db",
+        "USER": "admin",
+        "PASSWORD": "root",
+        "HOST": "127.0.0.1",
+        "PORT": "54322",
     }
 }
 
@@ -124,3 +130,31 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGIN_URL = "/admin/login/"
+
+# --- MinIO / S3 storage for MEDIA ---
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+            "secret_key": os.getenv("MINIO_SECRET_KEY", "minioadmin123"),
+            "bucket_name": os.getenv("MINIO_BUCKET", "jobability"),
+            "endpoint_url": os.getenv("MINIO_ENDPOINT", "http://127.0.0.1:9000"),
+            "region_name": "us-east-1",
+            "default_acl": None,
+            "querystring_auth": False,  # ссылки без ?X-Amz...
+            "addressing_style": "path",  # важно для MinIO
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+# Это нужно, чтобы {{ field.url }} давал рабочую публичную ссылку
+MEDIA_URL = os.getenv(
+    "MINIO_PUBLIC_MEDIA_URL",
+    "http://127.0.0.1:9000/jobability/",
+)

@@ -1,0 +1,87 @@
+.breadcrumbs {
+  margin-bottom: 24px;
+  color: #666;
+  font-size: 14px;
+}
+
+.breadcrumbs a {
+  color: #6c63ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.service-box {
+  display: flex;
+  gap: 40px;
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  flex-wrap: wrap;
+}
+
+.service-image img {
+  width: 300px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.service-info {
+  flex: 1;
+  min-width: 300px;
+}
+
+.service-info h1 {
+  margin-top: 0;
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.info-list p {
+  margin: 8px 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.description {
+  margin-top: 25px;
+  line-height: 1.7;
+  color: #555;
+  font-size: 15px;
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.buy-row {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.buy-btn {
+  background: #222;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.buy-btn:hover {
+  opacity: 0.9;
+}
+
+.salary-tag {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222;
+}
