@@ -27,7 +27,7 @@
   <form method="post" class="order-layout">
     {% csrf_token %}
 
-    
+
     <section class="card">
       <h2 class="order-subtitle">Параметры заявки</h2>
 
@@ -99,7 +99,7 @@
         <button type="submit" class="btn">Сохранить изменения</button>
       </div>
     </section>
-    
+
     <section class="card">
       <div class="card-head">
         <h2 class="order-subtitle">Состав заявки</h2>
@@ -112,7 +112,7 @@
             <div class="order-item-card">
               <div class="item-img">
 
-          
+
                 {% if line.vacancy.image %}
                   <img src="{{ line.vacancy.image.url }}" alt="{{ line.vacancy.title }}">
                 {% else %}

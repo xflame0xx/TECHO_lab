@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ApplicantProfile, Application, ApplicationVacancy, Vacancy
+from .Models import ApplicantProfile, Application, ApplicationVacancy, Vacancy
 
 
 @admin.register(Vacancy)
@@ -32,10 +32,6 @@ class ApplicationVacancyInline(admin.TabularInline):
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
-    """
-    finished_at / result_sum могут называться по-разному в моделях,
-    поэтому выводим через методы, чтобы админка не падала.
-    """
     list_display = (
         "id",
         "status",
@@ -81,10 +77,6 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 @admin.register(ApplicationVacancy)
 class ApplicationVacancyAdmin(admin.ModelAdmin):
-    """
-    position может называться по-разному или отсутствовать,
-    поэтому выводим через метод.
-    """
     list_display = ("id", "application", "vacancy", "qty", "position_display", "is_main")
     list_filter = ("is_main",)
     search_fields = (
@@ -95,7 +87,6 @@ class ApplicationVacancyAdmin(admin.ModelAdmin):
 
     @admin.display(description="Порядок")
     def position_display(self, obj):
-        
         for name in ("order_index", "position", "order", "sort", "sort_order"):
             if hasattr(obj, name):
                 return getattr(obj, name)

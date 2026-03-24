@@ -27,9 +27,9 @@ class ApplicantProfile(models.Model):
 
     class DisabilityCategory(models.TextChoices):
         NONE = "none", "Нет"
-        I = "I", "I группа"
-        II = "II", "II группа"
-        III = "III", "III группа"
+        GROUP_I = "I", "I группа"
+        GROUP_II = "II", "II группа"
+        GROUP_III = "III", "III группа"
 
     user = models.OneToOneField(
         User,

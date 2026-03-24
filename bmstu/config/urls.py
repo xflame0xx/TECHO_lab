@@ -18,18 +18,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from core import views
+from core import Views as views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
-    path("", views.home_redirect, name="home"),
-    path("vacancies/", views.VacanciesList, name="vacancies"),
-    path("vacancies/<int:id>/", views.VacancyDetail, name="vacancy"),
-
-    path("applications/", views.ApplicationsList, name="applications"),
-    path("applications/<int:id>/", views.ApplicationDetail, name="application"),
-
-    path("applications/add/<int:id>/", views.add_to_application, name="add_to_application"),
-    path("applications/delete/<int:id>/", views.delete_application, name="delete_application"),
+    path("", views.homeRedirect, name="home"),
+    path("vacancies/", views.vacanciesList, name="vacancies"),
+    path("vacancies/<int:id>/", views.vacancyDetail, name="vacancy"),
+    path("applications/", views.applicationsList, name="applications"),
+    path("applications/<int:id>/", views.applicationDetail, name="application"),
+    path("applications/add/<int:id>/", views.addToApplication, name="add_to_application"),
+    path("applications/delete/<int:id>/", views.deleteApplication, name="delete_application"),
 ]
