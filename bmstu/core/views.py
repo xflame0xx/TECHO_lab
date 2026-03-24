@@ -1,17 +1,20 @@
 from datetime import datetime
 
 from django.contrib.auth.models import User
-from django.db.models import Count, F, Max, Q, Sum
+from django.db.models import Count, ExpressionWrapper, F, IntegerField, Max, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .Models import ApplicantProfile, Application, ApplicationVacancy, Vacancy
 
 
-def _getDemoUser() -> User:
-    user, _ = User.objects.get_or_create(username="demo")
+def _get_demo_user() -> User:
+    user, _ = User.objects.get_or_create(
+        username="demo",
+        defaults={"first_name": "Demo"},
+    )
     return user
 
 
@@ -19,7 +22,7 @@ def homeRedirect(request):
     return redirect("vacancies")
 
 
-def _parseDate(value: str):
+def _parse_date(value: str):
     if not value:
         return None
     try:
@@ -28,7 +31,7 @@ def _parseDate(value: str):
         return None
 
 
-def _getOrCreateProfile(user: User) -> ApplicantProfile:
+def _get_or_create_profile(user: User) -> ApplicantProfile:
     profile = getattr(user, "applicant_profile", None)
     if profile:
         return profile
@@ -41,21 +44,99 @@ def _getOrCreateProfile(user: User) -> ApplicantProfile:
     )
 
 
-def _recalcApplicationSum(app: Application) -> int:
+def _recalc_application_sum(app: Application) -> int:
+    line_total = ExpressionWrapper(
+        F("qty") * F("vacancy__salary"),
+        output_field=IntegerField(),
+    )
+
     total = (
         ApplicationVacancy.objects.filter(application=app)
         .select_related("vacancy")
-        .aggregate(s=Sum(F("qty") * F("vacancy__salary")))
+        .aggregate(s=Coalesce(Sum(line_total), 0))
         .get("s")
         or 0
     )
+
     app.total_salary = int(total)
     app.save(update_fields=["total_salary"])
     return int(total)
 
 
+def _apply_status_change(app: Application, new_status: str) -> bool:
+    if not new_status or new_status == app.status:
+        return False
+
+    allowed_transitions = {
+        Application.Status.DRAFT: {
+            Application.Status.FORMED,
+            Application.Status.DELETED,
+        },
+        Application.Status.FORMED: {
+            Application.Status.FINISHED,
+        },
+        Application.Status.FINISHED: set(),
+        Application.Status.DELETED: set(),
+    }
+
+    if new_status not in allowed_transitions.get(app.status, set()):
+        return False
+
+    now = timezone.now()
+    update_fields = ["status"]
+    app.status = new_status
+
+    if new_status == Application.Status.FORMED and not app.formed_at:
+        app.formed_at = now
+        update_fields.append("formed_at")
+
+    if new_status == Application.Status.FINISHED:
+        if not app.formed_at:
+            app.formed_at = now
+            update_fields.append("formed_at")
+        if not app.completed_at:
+            app.completed_at = now
+            update_fields.append("completed_at")
+
+    if new_status == Application.Status.DELETED and not app.completed_at:
+        app.completed_at = now
+        update_fields.append("completed_at")
+
+    app.save(update_fields=update_fields)
+    return True
+
+
+def _build_application_context(app: Application, profile: ApplicantProfile) -> dict:
+    lines = (
+        ApplicationVacancy.objects.filter(application=app)
+        .select_related("vacancy")
+        .order_by("order_index", "id")
+    )
+
+    total_positions = lines.count()
+    total_sum = _recalc_application_sum(app)
+
+    context = {
+        "app": app,
+        "profile": profile,
+        "lines": lines,
+        "total_positions": total_positions,
+        "total_sum": total_sum,
+        "status_choices": Application.Status.choices,
+        "gender_choices": ApplicantProfile.Gender.choices,
+        "category_choices": ApplicantProfile.DisabilityCategory.choices,
+        # Для обратной совместимости с уже существующими шаблонами
+        "totalPositions": total_positions,
+        "totalSum": total_sum,
+        "statusChoices": Application.Status.choices,
+        "genderChoices": ApplicantProfile.Gender.choices,
+        "categoryChoices": ApplicantProfile.DisabilityCategory.choices,
+    }
+    return context
+
+
 def vacanciesList(request):
-    demoUser = _getDemoUser()
+    demo_user = _get_demo_user()
     search = request.GET.get("search", "").strip()
 
     qs = Vacancy.objects.filter(is_active=True)
@@ -65,13 +146,13 @@ def vacanciesList(request):
         )
 
     draft = Application.objects.filter(
-        creator=demoUser,
+        creator=demo_user,
         status=Application.Status.DRAFT,
     ).first()
 
-    draftCount = 0
+    draft_count = 0
     if draft:
-        draftCount = ApplicationVacancy.objects.filter(application=draft).count()
+        draft_count = ApplicationVacancy.objects.filter(application=draft).count()
 
     return render(
         request,
@@ -80,33 +161,36 @@ def vacanciesList(request):
             "vacancies": qs.order_by("id"),
             "search": search,
             "draft": draft,
-            "draftCount": draftCount,
+            "draft_count": draft_count,
+            # Обратная совместимость
+            "draftCount": draft_count,
         },
     )
 
 
 def vacancyDetail(request, id):
-    vacancy = Vacancy.objects.filter(pk=id, is_active=True).first()
-    if not vacancy:
-        raise Http404("Vacancy not found")
+    vacancy = get_object_or_404(Vacancy, pk=id, is_active=True)
     return render(request, "vacancy.html", {"vacancy": vacancy})
 
 
 def applicationsList(request):
-    demoUser = _getDemoUser()
+    demo_user = _get_demo_user()
 
     status = request.GET.get("status", "").strip()
-    dateFrom = _parseDate(request.GET.get("date_from", ""))
-    dateTo = _parseDate(request.GET.get("date_to", ""))
+    date_from = _parse_date(request.GET.get("date_from", ""))
+    date_to = _parse_date(request.GET.get("date_to", ""))
+
+    line_total = ExpressionWrapper(
+        F("lines__qty") * F("lines__vacancy__salary"),
+        output_field=IntegerField(),
+    )
 
     qs = (
-        Application.objects.filter(creator=demoUser)
+        Application.objects.filter(creator=demo_user)
+        .exclude(status=Application.Status.DELETED)
         .annotate(
-            linesCount=Coalesce(Count("applicationvacancy", distinct=True), 0),
-            totalSum=Coalesce(
-                Sum(F("applicationvacancy__qty") * F("applicationvacancy__vacancy__salary")),
-                0,
-            ),
+            lines_count=Coalesce(Count("lines", distinct=True), 0),
+            total_sum=Coalesce(Sum(line_total), 0),
         )
         .order_by("-id")
     )
@@ -114,10 +198,10 @@ def applicationsList(request):
     if status:
         qs = qs.filter(status=status)
 
-    if dateFrom:
-        qs = qs.filter(created_at__date__gte=dateFrom)
-    if dateTo:
-        qs = qs.filter(created_at__date__lte=dateTo)
+    if date_from:
+        qs = qs.filter(formed_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(formed_at__date__lte=date_to)
 
     return render(
         request,
@@ -125,6 +209,10 @@ def applicationsList(request):
         {
             "applications": qs,
             "statuses": Application.Status.choices,
+            "selected_status": status,
+            "date_from": request.GET.get("date_from", ""),
+            "date_to": request.GET.get("date_to", ""),
+            # Обратная совместимость
             "selectedStatus": status,
             "dateFrom": request.GET.get("date_from", ""),
             "dateTo": request.GET.get("date_to", ""),
@@ -133,56 +221,36 @@ def applicationsList(request):
 
 
 def applicationDetail(request, id):
-    demoUser = _getDemoUser()
+    demo_user = _get_demo_user()
 
-    app = Application.objects.filter(pk=id, creator=demoUser).first()
+    app = Application.objects.filter(pk=id, creator=demo_user).first()
     if not app:
         raise Http404("Application not found")
 
-    profile = _getOrCreateProfile(demoUser)
-
-    if app.applicant_id is None:
-        app.applicant = profile
-        app.save(update_fields=["applicant"])
+    profile = _get_or_create_profile(demo_user)
 
     if request.method == "POST":
-        newStatus = (request.POST.get("status") or "").strip()
-        allowedStatuses = dict(Application.Status.choices)
-
-        if newStatus and newStatus in allowedStatuses and newStatus != app.status:
-            now = timezone.now()
-            app.status = newStatus
-
-            if newStatus == Application.Status.FORMED and not app.formed_at:
-                app.formed_at = now
-
-            if newStatus == Application.Status.FINISHED and not app.completed_at:
-                if not app.formed_at:
-                    app.formed_at = now
-                app.completed_at = now
-
-            if newStatus == Application.Status.DELETED and not app.completed_at:
-                app.completed_at = now
-
-            app.save(update_fields=["status", "formed_at", "completed_at"])
+        if app.applicant_id is None:
+            app.applicant = profile
+            app.save(update_fields=["applicant"])
 
         profile.full_name = request.POST.get("full_name", profile.full_name).strip()
         profile.phone = request.POST.get("phone", profile.phone).strip()
         profile.city = request.POST.get("city", profile.city).strip()
 
-        ageRaw = request.POST.get("age", "").strip()
-        profile.age = int(ageRaw) if ageRaw.isdigit() else None
+        age_raw = request.POST.get("age", "").strip()
+        profile.age = int(age_raw) if age_raw.isdigit() else None
 
         gender = request.POST.get("gender", profile.gender)
         if gender in dict(ApplicantProfile.Gender.choices):
             profile.gender = gender
 
-        disabilityCategory = request.POST.get(
+        disability_category = request.POST.get(
             "disability_category",
             profile.disability_category,
         )
-        if disabilityCategory in dict(ApplicantProfile.DisabilityCategory.choices):
-            profile.disability_category = disabilityCategory
+        if disability_category in dict(ApplicantProfile.DisabilityCategory.choices):
+            profile.disability_category = disability_category
 
         profile.save()
 
@@ -193,36 +261,19 @@ def applicationDetail(request, id):
                 line.comment = (request.POST.get(key, "") or "").strip()
                 line.save(update_fields=["comment"])
 
-        _recalcApplicationSum(app)
+        _recalc_application_sum(app)
+
+        new_status = (request.POST.get("status") or "").strip()
+        _apply_status_change(app, new_status)
+
         return redirect("application", id=app.id)
 
-    lines = (
-        ApplicationVacancy.objects.filter(application=app)
-        .select_related("vacancy")
-        .order_by("order_index", "id")
-    )
-
-    totalPositions = lines.count()
-    totalSum = _recalcApplicationSum(app)
-
-    return render(
-        request,
-        "application.html",
-        {
-            "app": app,
-            "profile": profile,
-            "lines": lines,
-            "totalPositions": totalPositions,
-            "totalSum": totalSum,
-            "statusChoices": Application.Status.choices,
-            "genderChoices": ApplicantProfile.Gender.choices,
-            "categoryChoices": ApplicantProfile.DisabilityCategory.choices,
-        },
-    )
+    context = _build_application_context(app, profile)
+    return render(request, "application.html", context)
 
 
 def addToApplication(request, id):
-    demoUser = _getDemoUser()
+    demo_user = _get_demo_user()
 
     if request.method != "POST":
         return redirect("vacancies")
@@ -232,24 +283,24 @@ def addToApplication(request, id):
         raise Http404("Vacancy not found")
 
     app = Application.objects.filter(
-        creator=demoUser,
+        creator=demo_user,
         status=Application.Status.DRAFT,
     ).first()
 
     if not app:
         app = Application.objects.create(
-            creator=demoUser,
+            creator=demo_user,
             status=Application.Status.DRAFT,
         )
 
-    profile = _getOrCreateProfile(demoUser)
+    profile = _get_or_create_profile(demo_user)
     if app.applicant_id is None:
         app.applicant = profile
         app.save(update_fields=["applicant"])
 
     line = ApplicationVacancy.objects.filter(application=app, vacancy=vacancy).first()
     if not line:
-        lastIdx = (
+        last_idx = (
             ApplicationVacancy.objects.filter(application=app)
             .aggregate(m=Max("order_index"))
             .get("m")
@@ -259,29 +310,27 @@ def addToApplication(request, id):
             application=app,
             vacancy=vacancy,
             qty=1,
-            order_index=lastIdx + 1,
+            order_index=last_idx + 1,
             is_main=False,
             comment="",
         )
 
-    _recalcApplicationSum(app)
+    _recalc_application_sum(app)
     return redirect("vacancies")
 
 
 def deleteApplication(request, id):
-    demoUser = _getDemoUser()
+    demo_user = _get_demo_user()
 
     if request.method != "POST":
         return redirect("applications")
 
-    app = Application.objects.filter(pk=id, creator=demoUser).first()
+    app = Application.objects.filter(
+        pk=id,
+        creator=demo_user,
+    ).first()
     if not app:
         raise Http404("Application not found")
 
-    now = timezone.now()
-    Application.objects.filter(pk=id, creator=demoUser).update(
-        status=Application.Status.DELETED,
-        completed_at=Coalesce(F("completed_at"), now),
-    )
-
+    _apply_status_change(app, Application.Status.DELETED)
     return redirect("applications")
