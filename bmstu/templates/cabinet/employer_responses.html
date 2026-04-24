@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Отклики на вакансии{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/cabinet.css' %}">{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div>
+    <span class="eyebrow">Работодатель</span>
+    <h1 class="page-title">Отклики на ваши вакансии</h1>
+  </div>
+  <div>
+    <a class="btn btn-ghost" href="{% url 'employer_cabinet' %}">← Назад в кабинет</a>
+  </div>
+</section>
+
+<section class="glass-card">
+  <div class="list-stack">
+    {% for app in applications %}
+      <div class="list-card list-card--static">
+        <strong>Заявка №{{ app.id }}</strong>
+        <span>Соискатель: {{ app.applicant.full_name|default:app.creator.username }}</span>
+        <span>Статус: {{ app.get_status_display }}</span>
+        <span>Позиции: {{ app.lines_count|default:0 }}</span>
+        <span>Сумма: {{ app.total_sum|default:0 }} ₽</span>
+      </div>
+    {% empty %}
+      <div class="list-card list-card--static">
+        <strong>Откликов пока нет</strong>
+        <span>Когда соискатели начнут откликаться, они появятся здесь.</span>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

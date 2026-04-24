@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Кабинет модератора{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/cabinet.css' %}">{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div>
+    <span class="eyebrow">Кабинет модератора</span>
+    <h1 class="page-title">Модерация вакансий и завершение заявок</h1>
+  </div>
+</section>
+
+<div class="cabinet-grid cabinet-grid--wide">
+  <section class="glass-card">
+    <h2>Вакансии на модерации</h2>
+    <div class="moderation-stack">
+      {% for vacancy in pending_vacancies %}
+        <div class="moderation-card">
+          <div>
+            <strong>{{ vacancy.title }}</strong>
+            <div>{{ vacancy.company }} • {{ vacancy.city }}</div>
+            <div class="muted">Автор: {{ vacancy.creator.username|default:"—" }}</div>
+          </div>
+
+          <form method="post" class="moderation-form">
+            {% csrf_token %}
+            <input type="hidden" name="entity" value="vacancy">
+            <input type="hidden" name="object_id" value="{{ vacancy.id }}">
+            <textarea name="moderation_note" rows="3" placeholder="Комментарий модератора"></textarea>
+            <div class="action-row">
+              <button class="btn" type="submit" name="action" value="approve">Одобрить</button>
+              <button class="btn btn-danger" type="submit" name="action" value="reject">Отклонить</button>
+            </div>
+          </form>
+        </div>
+      {% empty %}
+        <div class="list-card list-card--static">
+          <strong>Нет вакансий на модерации</strong>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="glass-card">
+    <h2>Сформированные заявки</h2>
+    <div class="moderation-stack">
+      {% for app in formed_applications %}
+        <div class="moderation-card">
+          <div>
+            <strong>Заявка №{{ app.id }}</strong>
+            <div>Соискатель: {{ app.applicant.full_name|default:app.creator.username }}</div>
+            <div class="muted">Статус: {{ app.get_status_display }}</div>
+          </div>
+
+          <form method="post" class="moderation-form">
+            {% csrf_token %}
+            <input type="hidden" name="entity" value="application">
+            <input type="hidden" name="object_id" value="{{ app.id }}">
+            <textarea name="moderation_note" rows="3" placeholder="Комментарий модератора"></textarea>
+            <div class="action-row">
+              <button class="btn" type="submit" name="action" value="finish">Завершить</button>
+              <button class="btn btn-danger" type="submit" name="action" value="reject">Отклонить</button>
+            </div>
+          </form>
+        </div>
+      {% empty %}
+        <div class="list-card list-card--static">
+          <strong>Нет заявок для обработки</strong>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

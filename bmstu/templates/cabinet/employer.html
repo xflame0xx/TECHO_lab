@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Кабинет работодателя{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/cabinet.css' %}">{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div>
+    <span class="eyebrow">Кабинет работодателя</span>
+    <h1 class="page-title">Создавайте вакансии и смотрите отклики</h1>
+    <p class="muted">Каждая новая вакансия сначала отправляется на модерацию.</p>
+  </div>
+  <div>
+    <a class="btn btn-ghost" href="{% url 'employer_responses' %}">Отклики на мои вакансии</a>
+  </div>
+</section>
+
+<div class="cabinet-grid cabinet-grid--wide">
+  <section class="glass-card">
+    <h2>Новая вакансия</h2>
+    <form method="post" enctype="multipart/form-data" class="profile-form">
+      {% csrf_token %}
+
+      <div class="field-row">
+        <div class="field">
+          <label>Название вакансии</label>
+          <input name="title" required>
+        </div>
+        <div class="field">
+          <label>Компания</label>
+          <input name="company" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Город</label>
+          <input name="city" required>
+        </div>
+        <div class="field">
+          <label>Зарплата</label>
+          <input name="salary" type="number" min="0" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>График</label>
+          <input name="schedule" placeholder="Полный день / Гибкий график / Удалённо">
+        </div>
+        <div class="field">
+          <label>Поддержка</label>
+          <input name="disability_support" placeholder="Адаптированное рабочее место и т.д.">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Описание</label>
+        <textarea name="description" rows="5"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Изображение</label>
+          <input type="file" name="image">
+        </div>
+        <div class="field">
+          <label>Видео</label>
+          <input type="file" name="video">
+        </div>
+      </div>
+
+      <button class="btn" type="submit">Отправить на модерацию</button>
+    </form>
+  </section>
+
+  <section class="glass-card">
+    <h2>Мои вакансии</h2>
+    <div class="list-stack">
+      {% for vacancy in vacancies %}
+        <div class="list-card list-card--static">
+          <strong>{{ vacancy.title }}</strong>
+          <span>{{ vacancy.company }} • {{ vacancy.city }}</span>
+          <small>Статус: {{ vacancy.get_moderation_status_display }}</small>
+        </div>
+      {% empty %}
+        <div class="list-card list-card--static">
+          <strong>Пока нет вакансий</strong>
+          <span>Создайте первую вакансию через форму слева.</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

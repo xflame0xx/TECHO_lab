@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Кабинет соискателя{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/cabinet.css' %}">{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div>
+    <span class="eyebrow">Кабинет соискателя</span>
+    <h1 class="page-title">Ваш профиль и отклики</h1>
+    <p class="muted">Заполните данные профиля и откликайтесь на опубликованные вакансии.</p>
+  </div>
+</section>
+
+<div class="cabinet-grid">
+  <section class="glass-card">
+    <h2>Личные данные</h2>
+    <form method="post" class="profile-form">
+      {% csrf_token %}
+
+      <div class="field-row">
+        <div class="field">
+          <label>ФИО</label>
+          <input name="full_name" value="{{ profile.full_name }}">
+        </div>
+        <div class="field">
+          <label>Телефон</label>
+          <input name="phone" value="{{ profile.phone }}">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Город</label>
+          <input name="city" value="{{ profile.city }}">
+        </div>
+        <div class="field">
+          <label>Возраст</label>
+          <input name="age" value="{% if profile.age %}{{ profile.age }}{% endif %}">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Пол</label>
+          <select name="gender">
+            {% for code, title in gender_choices %}
+              <option value="{{ code }}" {% if profile.gender == code %}selected{% endif %}>{{ title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Категория инвалидности</label>
+          <select name="disability_category">
+            {% for code, title in category_choices %}
+              <option value="{{ code }}" {% if profile.disability_category == code %}selected{% endif %}>{{ title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <button class="btn" type="submit">Сохранить профиль</button>
+    </form>
+  </section>
+
+  <section class="glass-card">
+    <h2>Быстрые действия</h2>
+    <div class="action-stack">
+      <a class="action-link" href="{% url 'vacancies' %}">Открыть вакансии</a>
+      <a class="action-link" href="{% url 'applications' %}">Мои заявки</a>
+      {% if draft %}
+        <a class="action-link" href="{% url 'application' draft.id %}">Открыть черновик заявки №{{ draft.id }}</a>
+      {% endif %}
+    </div>
+
+    <h2 style="margin-top: 26px;">Последние заявки</h2>
+    <div class="list-stack">
+      {% for app in last_applications %}
+        <a class="list-card" href="{% url 'application' app.id %}">
+          <strong>Заявка №{{ app.id }}</strong>
+          <span>Статус: {{ app.get_status_display }}</span>
+        </a>
+      {% empty %}
+        <div class="list-card list-card--static">
+          <strong>Заявок пока нет</strong>
+          <span>Выберите вакансию и откликнитесь на неё.</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

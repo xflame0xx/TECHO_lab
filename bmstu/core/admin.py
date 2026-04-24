@@ -1,13 +1,30 @@
 from django.contrib import admin
 
-from .Models import ApplicantProfile, Application, ApplicationVacancy, Vacancy
+from .Models import ApplicantProfile, Application, ApplicationVacancy, UserAccount, Vacancy
+
+
+@admin.register(UserAccount)
+class UserAccountAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "role", "created_at")
+    list_filter = ("role",)
+    search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
 
 
 @admin.register(Vacancy)
 class VacancyAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "company", "city", "salary", "is_active")
-    list_filter = ("is_active", "city")
-    search_fields = ("title", "company", "city")
+    list_display = (
+        "id",
+        "title",
+        "company",
+        "city",
+        "salary",
+        "creator",
+        "moderation_status",
+        "moderator",
+        "is_active",
+    )
+    list_filter = ("is_active", "moderation_status", "city")
+    search_fields = ("title", "company", "city", "creator__username")
 
 
 @admin.register(ApplicantProfile)
@@ -37,10 +54,11 @@ class ApplicationAdmin(admin.ModelAdmin):
         "status",
         "creator",
         "applicant",
+        "moderator",
         "created_at",
-        "formed_at_display",
-        "finished_at_display",
-        "result_sum_display",
+        "formed_at",
+        "completed_at",
+        "total_salary",
     )
     list_filter = ("status", "created_at")
     search_fields = (
@@ -53,41 +71,13 @@ class ApplicationAdmin(admin.ModelAdmin):
     )
     inlines = (ApplicationVacancyInline,)
 
-    @admin.display(description="Дата формирования")
-    def formed_at_display(self, obj):
-        return getattr(obj, "formed_at", None) or "—"
-
-    @admin.display(description="Дата завершения")
-    def finished_at_display(self, obj):
-        for name in ("finished_at", "completed_at", "closed_at"):
-            val = getattr(obj, name, None)
-            if val:
-                return val
-        return "—"
-
-    @admin.display(description="Результат (сумма)")
-    def result_sum_display(self, obj):
-        for name in ("result_sum", "total_salary", "total_sum", "total"):
-            if hasattr(obj, name):
-                val = getattr(obj, name)
-                if val is not None:
-                    return val
-        return "—"
-
 
 @admin.register(ApplicationVacancy)
 class ApplicationVacancyAdmin(admin.ModelAdmin):
-    list_display = ("id", "application", "vacancy", "qty", "position_display", "is_main")
+    list_display = ("id", "application", "vacancy", "qty", "order_index", "is_main")
     list_filter = ("is_main",)
     search_fields = (
         "application__id",
         "vacancy__title",
         "vacancy__company",
     )
-
-    @admin.display(description="Порядок")
-    def position_display(self, obj):
-        for name in ("order_index", "position", "order", "sort", "sort_order"):
-            if hasattr(obj, name):
-                return getattr(obj, name)
-        return "—"

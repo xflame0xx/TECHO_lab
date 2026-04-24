@@ -1,19 +1,24 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .Models import ApplicantProfile, Application, ApplicationVacancy, Vacancy
+from .Models import ApplicantProfile, Application, ApplicationVacancy, UserAccount, Vacancy
 from .services import (
     apply_status_change,
-    get_constant_moderator,
     get_or_create_profile,
+    get_user_role,
     recalc_application_sum,
 )
+
+User = get_user_model()
 
 
 class VacancySerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     video_url = serializers.SerializerMethodField()
+    creator_login = serializers.CharField(source="creator.username", read_only=True)
+    moderator_login = serializers.CharField(source="moderator.username", read_only=True)
+    is_published = serializers.SerializerMethodField()
 
     class Meta:
         model = Vacancy
@@ -31,14 +36,33 @@ class VacancySerializer(serializers.ModelSerializer):
             "video",
             "image_url",
             "video_url",
+            "creator_login",
+            "moderator_login",
+            "moderation_status",
+            "moderation_note",
+            "published_at",
+            "is_published",
         ]
-        read_only_fields = ["id", "image_url", "video_url"]
+        read_only_fields = [
+            "id",
+            "image_url",
+            "video_url",
+            "creator_login",
+            "moderator_login",
+            "moderation_status",
+            "moderation_note",
+            "published_at",
+            "is_published",
+        ]
 
     def get_image_url(self, obj):
         return obj.image.url if obj.image else None
 
     def get_video_url(self, obj):
         return obj.video.url if obj.video else None
+
+    def get_is_published(self, obj):
+        return obj.is_published
 
 
 class ApplicantProfileSerializer(serializers.ModelSerializer):
@@ -79,6 +103,7 @@ class ApplicationLineSerializer(serializers.ModelSerializer):
 class ApplicationListSerializer(serializers.ModelSerializer):
     creator_login = serializers.CharField(source="creator.username", read_only=True)
     moderator_login = serializers.CharField(source="moderator.username", read_only=True)
+    applicant_name = serializers.CharField(source="applicant.full_name", read_only=True)
     lines_count = serializers.IntegerField(read_only=True)
     calculated_lines_count = serializers.IntegerField(read_only=True)
     total_sum = serializers.IntegerField(read_only=True)
@@ -90,6 +115,7 @@ class ApplicationListSerializer(serializers.ModelSerializer):
             "status",
             "creator_login",
             "moderator_login",
+            "applicant_name",
             "created_at",
             "formed_at",
             "completed_at",
@@ -218,6 +244,7 @@ class ApplicationModerationSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         app: Application = self.context["application"]
+        moderator = self.context.get("moderator")
         action = self.validated_data["action"]
 
         if "moderator_note" in self.validated_data:
@@ -226,7 +253,7 @@ class ApplicationModerationSerializer(serializers.Serializer):
         new_status = (
             Application.Status.FINISHED if action == "finish" else Application.Status.REJECTED
         )
-        apply_status_change(app, new_status, moderator=get_constant_moderator())
+        apply_status_change(app, new_status, moderator=moderator)
         app.save(update_fields=["moderator_note"])
         return app
 
@@ -254,27 +281,80 @@ class ApplicationLineMutationSerializer(serializers.Serializer):
     order_index = serializers.IntegerField(required=False, min_value=1)
 
     def validate_vacancy_id(self, value):
-        if not Vacancy.objects.filter(pk=value, is_active=True).exists():
+        if not Vacancy.objects.filter(
+            pk=value,
+            is_active=True,
+            moderation_status=Vacancy.ModerationStatus.APPROVED,
+        ).exists():
             raise serializers.ValidationError("Активная вакансия не найдена.")
         return value
 
 
+class VacancyModerationSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=[("approve", "approve"), ("reject", "reject")])
+    moderation_note = serializers.CharField(required=False, allow_blank=True)
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=4)
+    role = serializers.ChoiceField(
+        write_only=True,
+        choices=[
+            (UserAccount.Role.APPLICANT, "Соискатель"),
+            (UserAccount.Role.EMPLOYER, "Работодатель"),
+        ],
+    )
 
     class Meta:
         model = User
-        fields = ["id", "username", "password", "first_name", "last_name", "email"]
+        fields = ["id", "username", "password", "first_name", "last_name", "email", "role"]
         read_only_fields = ["id"]
 
     @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password")
+        role = validated_data.pop("role")
+
         user = User.objects.create_user(password=password, **validated_data)
-        ApplicantProfile.objects.create(
-            user=user,
-            full_name=(f"{user.last_name} {user.first_name}".strip() or user.username),
-            city="",
-            phone="",
-        )
+        UserAccount.objects.create(user=user, role=role)
+
+        if role == UserAccount.Role.APPLICANT:
+            ApplicantProfile.objects.create(
+                user=user,
+                full_name=(f"{user.last_name} {user.first_name}".strip() or user.username),
+                city="",
+                phone="",
+            )
         return user
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(choices=UserAccount.Role.choices)
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    username = serializers.CharField()
+    role = serializers.CharField()
+    session_key = serializers.CharField(allow_null=True)
+
+
+class LogoutResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
+
+class CurrentUserSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        request = self.context["request"]
+        user = request.user
+        return {
+            "id": user.id,
+            "username": user.username,
+            "role": get_user_role(user),
+            "full_name": user.get_full_name(),
+            "email": user.email,
+            "is_authenticated": user.is_authenticated,
+            "session_key": request.session.session_key,
+        }

@@ -1,0 +1,86 @@
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 24px;
+}
+
+.auth-hero,
+.auth-card {
+  border-radius: 28px;
+  padding: 30px;
+}
+
+.auth-hero {
+  background: linear-gradient(135deg, rgba(79, 70, 229, .92), rgba(14, 165, 233, .88));
+  color: white;
+}
+
+.auth-card {
+  display: grid;
+  gap: 16px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.choice-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.choice-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.choice-card input {
+  width: auto;
+}
+
+.error-box {
+  background: rgba(254, 226, 226, 0.75);
+  color: #991b1b;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.demo-card {
+  margin-top: 24px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.demo-title {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+@media (max-width: 980px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .choice-grid,
+  .choice-grid--two,
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}

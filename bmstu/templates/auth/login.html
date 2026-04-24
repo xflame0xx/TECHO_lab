@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вход | JobAbility{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+  <div class="auth-hero">
+    <span class="eyebrow">Вход</span>
+    <h1>Авторизация по роли</h1>
+    <p>Выберите, как вы входите: модератор, работодатель или соискатель.</p>
+
+    <div class="demo-card">
+      <div class="demo-title">Демо-модератор</div>
+      <div><b>Логин:</b> {{ demo_moderator.username }}</div>
+      <div><b>Пароль:</b> {{ demo_moderator.password }}</div>
+    </div>
+  </div>
+
+  <form method="post" class="auth-card">
+    {% csrf_token %}
+    <h2>Войти</h2>
+
+    <div class="field">
+      <label>Логин</label>
+      <input name="username" required>
+    </div>
+
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" name="password" required>
+    </div>
+
+    <div class="field">
+      <label>Роль</label>
+      <div class="choice-grid">
+        <label class="choice-card">
+          <input type="radio" name="role" value="moderator" required>
+          <span>Модератор</span>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="role" value="employer">
+          <span>Работодатель</span>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="role" value="applicant">
+          <span>Соискатель</span>
+        </label>
+      </div>
+    </div>
+
+    <button class="btn btn-block" type="submit">Войти</button>
+  </form>
+</section>
+{% endblock %}

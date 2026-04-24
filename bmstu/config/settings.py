@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "storages",
     "core",
 ]
@@ -92,6 +93,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "core" / "static"]
+
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
@@ -118,10 +120,38 @@ if USE_MINIO:
     }
     MEDIA_URL = os.getenv("MINIO_PUBLIC_MEDIA_URL", "http://127.0.0.1:9000/jobability/")
 
+USE_REDIS_SESSIONS = os.getenv("DJANGO_USE_REDIS_SESSIONS", "False").lower() == "true"
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+
+if USE_REDIS_SESSIONS:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "jobability",
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "/admin/login/"
+
+LOGIN_URL = "/login/"
+
+SESSION_COOKIE_NAME = "sessionid"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "core.authentication.CookieSessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.FormParser",
@@ -130,5 +160,27 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "JobAbility API",
+    "DESCRIPTION": (
+        "API для лабораторной 4: регистрация, вход по session-cookie, роли "
+        "соискателя/работодателя/модератора, работа с вакансиями и заявками. "
+        "Для демонстрации в Swagger сначала выполните POST /api/users/login/, "
+        "после чего cookie sessionid будет использована браузером автоматически."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+        "filter": True,
+    },
+    "TAGS": [
+        {"name": "auth", "description": "Регистрация, вход, выход и текущий пользователь."},
+        {"name": "vacancies", "description": "Вакансии и модерация вакансий."},
+        {"name": "applications", "description": "Заявки и работа с ними."},
     ],
 }

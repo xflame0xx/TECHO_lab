@@ -5,29 +5,57 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}JobAbility{% endblock %}</title>
-
-
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
-
-
   {% block css %}{% endblock %}
 </head>
-
 <body>
   <header class="topbar">
-    <div class="brand">
-      <div class="brand-icon">*</div>
-      <div class="brand-name">JobAbility</div>
-    </div>
+    <a href="{% url 'home' %}" class="brand">
+      <span class="brand-badge">JA</span>
+      <span class="brand-text">
+        <strong class="brand-name">JobAbility</strong>
+        <small class="brand-sub">Платформа вакансий и откликов</small>
+      </span>
+    </a>
 
     <nav class="topnav">
       <a href="{% url 'vacancies' %}">Вакансии</a>
-      <a href="{% url 'applications' %}">Заявки</a>
-      <a href="/admin/">админ</a>
+
+      {% if user.is_authenticated %}
+        {% if user.account.role == 'applicant' or user.account.role == 'moderator' %}
+          <a href="{% url 'applications' %}">Заявки</a>
+        {% endif %}
+        <a href="{% url 'dashboard' %}">Личный кабинет</a>
+      {% endif %}
+
+      <a href="{% url 'swagger-ui' %}">Swagger</a>
+      <a href="/admin/">Admin</a>
     </nav>
+
+    <div class="userbox">
+      {% if user.is_authenticated %}
+        <div class="user-meta">
+          <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="user-role">
+            {% if user.account %}{{ user.account.get_role_display }}{% else %}Пользователь{% endif %}
+          </div>
+        </div>
+        <a href="{% url 'logout' %}" class="btn btn-ghost">Выйти</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-ghost">Войти</a>
+        <a href="{% url 'register' %}" class="btn">Регистрация</a>
+      {% endif %}
+    </div>
   </header>
 
   <main class="page">
+    {% if messages %}
+      <div class="flash-stack">
+        {% for message in messages %}
+          <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>

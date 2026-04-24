@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация | JobAbility{% endblock %}
+{% block css %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+  <div class="auth-hero">
+    <span class="eyebrow">Регистрация</span>
+    <h1>Создайте аккаунт за минуту</h1>
+    <p>
+      На регистрации доступны только две роли:
+      <b>работодатель</b> и <b>соискатель</b>.
+      От выбранной роли зависит кабинет и доступные действия в системе.
+    </p>
+  </div>
+
+  <form method="post" class="auth-card">
+    {% csrf_token %}
+    <h2>Новый аккаунт</h2>
+
+    {% if errors %}
+      <div class="error-box">
+        {% for field, field_errors in errors.items %}
+          <div><b>{{ field }}</b>: {{ field_errors|join:', ' }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="field-row">
+      <div class="field">
+        <label>Имя</label>
+        <input name="first_name" value="{{ form.first_name }}">
+      </div>
+      <div class="field">
+        <label>Фамилия</label>
+        <input name="last_name" value="{{ form.last_name }}">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Username</label>
+      <input name="username" value="{{ form.username }}" required>
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ form.email }}">
+    </div>
+
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" name="password" required>
+    </div>
+
+    <div class="field">
+      <label>Тип аккаунта</label>
+      <div class="choice-grid choice-grid--two">
+        <label class="choice-card">
+          <input type="radio" name="role" value="employer" required>
+          <span>Работодатель</span>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="role" value="applicant" checked>
+          <span>Соискатель</span>
+        </label>
+      </div>
+    </div>
+
+    <button class="btn btn-block" type="submit">Создать аккаунт</button>
+  </form>
+</section>
+{% endblock %}

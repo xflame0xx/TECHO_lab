@@ -76,14 +76,56 @@ def vacancy_video_upload_to(instance, filename: str) -> str:
     return build_upload_path("vacancies/videos", instance, filename)
 
 
+class UserAccount(models.Model):
+    class Role(models.TextChoices):
+        APPLICANT = "applicant", "Соискатель"
+        EMPLOYER = "employer", "Работодатель"
+        MODERATOR = "moderator", "Модератор"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="account")
+    role = models.CharField(max_length=32, choices=Role.choices, default=Role.APPLICANT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} ({self.get_role_display()})"
+
+
 class Vacancy(models.Model):
+    class ModerationStatus(models.TextChoices):
+        PENDING = "PENDING", "На модерации"
+        APPROVED = "APPROVED", "Одобрена"
+        REJECTED = "REJECTED", "Отклонена"
+
     title = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     salary = models.IntegerField(default=0)
     description = models.TextField(blank=True)
 
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="created_vacancies",
+        null=True,
+        blank=True,
+    )
+    moderator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="moderated_vacancies",
+        null=True,
+        blank=True,
+    )
+
     is_active = models.BooleanField(default=True)
+    moderation_status = models.CharField(
+        max_length=16,
+        choices=ModerationStatus.choices,
+        default=ModerationStatus.APPROVED,
+    )
+    moderation_note = models.TextField(blank=True, default="")
+    published_at = models.DateTimeField(blank=True, null=True)
+
     image = models.ImageField(upload_to=vacancy_image_upload_to, blank=True, null=True)
     video = models.FileField(upload_to=vacancy_video_upload_to, blank=True, null=True)
 
@@ -92,6 +134,10 @@ class Vacancy(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.company})"
+
+    @property
+    def is_published(self) -> bool:
+        return self.is_active and self.moderation_status == self.ModerationStatus.APPROVED
 
 
 class ApplicantProfile(models.Model):
