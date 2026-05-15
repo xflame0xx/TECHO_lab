@@ -177,6 +177,7 @@ class ApplicationUpdateSerializer(serializers.Serializer):
 
         profile_fields = ["full_name", "phone", "city", "age", "gender", "disability_category"]
         profile_updated = False
+
         for field in profile_fields:
             if field in validated_data:
                 setattr(profile, field, validated_data[field])
@@ -187,6 +188,7 @@ class ApplicationUpdateSerializer(serializers.Serializer):
 
         if "contact_email" in validated_data:
             instance.contact_email = validated_data["contact_email"]
+
         if "cover_letter" in validated_data:
             instance.cover_letter = validated_data["cover_letter"]
 
@@ -206,21 +208,27 @@ class ApplicationFormSerializer(serializers.Serializer):
 
         if app.status != Application.Status.DRAFT:
             errors["status"] = "Сформировать можно только заявку в статусе черновика."
+
         if not app.lines.exists():
             errors["lines"] = "Нельзя сформировать пустую заявку."
+
         if not profile.full_name:
             errors["full_name"] = "Укажите ФИО заявителя."
+
         if not profile.phone:
             errors["phone"] = "Укажите телефон заявителя."
+
         if not profile.city:
             errors["city"] = "Укажите город заявителя."
 
         if errors:
             raise serializers.ValidationError(errors)
+
         return attrs
 
     def save(self, **kwargs):
         app: Application = self.context["application"]
+
         for line in app.lines.select_related("vacancy"):
             line.line_salary_total = line.qty * line.vacancy.salary
             line.save(update_fields=["line_salary_total"])
@@ -236,10 +244,12 @@ class ApplicationModerationSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         app: Application = self.context["application"]
+
         if app.status != Application.Status.FORMED:
             raise serializers.ValidationError(
                 {"status": "Модератор может обработать только сформированную заявку."}
             )
+
         return attrs
 
     def save(self, **kwargs):
@@ -253,6 +263,7 @@ class ApplicationModerationSerializer(serializers.Serializer):
         new_status = (
             Application.Status.FINISHED if action == "finish" else Application.Status.REJECTED
         )
+
         apply_status_change(app, new_status, moderator=moderator)
         app.save(update_fields=["moderator_note"])
         return app
@@ -261,10 +272,12 @@ class ApplicationModerationSerializer(serializers.Serializer):
 class ApplicationDeleteSerializer(serializers.Serializer):
     def validate(self, attrs):
         app: Application = self.context["application"]
+
         if app.status != Application.Status.DRAFT:
             raise serializers.ValidationError(
                 {"status": "Удалить можно только заявку в статусе черновика."}
             )
+
         return attrs
 
     def save(self, **kwargs):
@@ -287,6 +300,7 @@ class ApplicationLineMutationSerializer(serializers.Serializer):
             moderation_status=Vacancy.ModerationStatus.APPROVED,
         ).exists():
             raise serializers.ValidationError("Активная вакансия не найдена.")
+
         return value
 
 
@@ -316,7 +330,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         role = validated_data.pop("role")
 
         user = User.objects.create_user(password=password, **validated_data)
-        UserAccount.objects.create(user=user, role=role)
+
+        UserAccount.objects.create(
+            user=user,
+            role=role,
+        )
 
         if role == UserAccount.Role.APPLICANT:
             ApplicantProfile.objects.create(
@@ -325,19 +343,22 @@ class RegisterSerializer(serializers.ModelSerializer):
                 city="",
                 phone="",
             )
+
         return user
 
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=UserAccount.Role.choices)
 
 
 class LoginResponseSerializer(serializers.Serializer):
-    message = serializers.CharField()
+    id = serializers.IntegerField()
     username = serializers.CharField()
     role = serializers.CharField()
+    full_name = serializers.CharField(allow_blank=True)
+    email = serializers.EmailField(allow_blank=True)
+    is_authenticated = serializers.BooleanField()
     session_key = serializers.CharField(allow_null=True)
 
 
@@ -349,6 +370,7 @@ class CurrentUserSerializer(serializers.Serializer):
     def to_representation(self, instance):
         request = self.context["request"]
         user = request.user
+
         return {
             "id": user.id,
             "username": user.username,
@@ -358,3 +380,14 @@ class CurrentUserSerializer(serializers.Serializer):
             "is_authenticated": user.is_authenticated,
             "session_key": request.session.session_key,
         }
+
+
+class ApplicantProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicantProfile
+        fields = ["id", "full_name", "phone", "city", "age", "gender", "disability_category"]
+        read_only_fields = ["id"]
+
+
+class EmployerResponseSerializer(ApplicationListSerializer):
+    pass

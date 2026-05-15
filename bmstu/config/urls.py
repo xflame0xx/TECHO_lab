@@ -1,10 +1,12 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
+from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from core import api_views, views
+from core.metrics import metrics_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -14,6 +16,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("dashboard/", views.dashboard_redirect, name="dashboard"),
     path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("metrics/", metrics_view, name="metrics"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("vacancies/", views.vacancies_list, name="vacancies"),
     path("vacancies/<int:id>/", views.vacancy_detail, name="vacancy"),
@@ -26,6 +29,18 @@ urlpatterns = [
     path("cabinet/employer/responses/", views.employer_responses, name="employer_responses"),
     path("cabinet/moderator/", views.moderator_cabinet, name="moderator_cabinet"),
     path("api/vacancies/", api_views.VacancyListCreateApi.as_view(), name="api-vacancies"),
+    path("api/users/profile/", api_views.ApplicantProfileApi.as_view(), name="api-users-profile"),
+    path("api/vacancies/mine/", api_views.MyVacanciesApi.as_view(), name="api-vacancies-mine"),
+    path(
+        "api/vacancies/pending/",
+        api_views.PendingVacanciesApi.as_view(),
+        name="api-vacancies-pending",
+    ),
+    path(
+        "api/applications/employer-responses/",
+        api_views.EmployerResponsesApi.as_view(),
+        name="api-applications-employer-responses",
+    ),
     path("api/vacancies/<int:pk>/", api_views.VacancyDetailApi.as_view(), name="api-vacancy"),
     path(
         "api/vacancies/<int:pk>/moderate/",
@@ -67,6 +82,16 @@ urlpatterns = [
     path("api/users/login/", api_views.LoginApi.as_view(), name="api-users-login"),
     path("api/users/logout/", api_views.LogoutApi.as_view(), name="api-users-logout"),
     path("api/users/me/", api_views.CurrentUserApi.as_view(), name="api-users-me"),
+    path(
+        "frontend/",
+        TemplateView.as_view(template_name="frontend/index.html"),
+        name="frontend-app",
+    ),
+    re_path(
+        r"^frontend/.*$",
+        TemplateView.as_view(template_name="frontend/index.html"),
+        name="frontend-app-fallback",
+    ),
 ]
 
 if not settings.USE_MINIO:

@@ -36,6 +36,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.RequestLoggingMiddleware",
+    "core.metrics.PrometheusMetricsMiddleware",
 ]
 
 ROOT_URLCONF = "config.Urls"
@@ -183,4 +185,33 @@ SPECTACULAR_SETTINGS = {
         {"name": "vacancies", "description": "Вакансии и модерация вакансий."},
         {"name": "applications", "description": "Заявки и работа с ними."},
     ],
+}
+
+LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        "core": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
 }
